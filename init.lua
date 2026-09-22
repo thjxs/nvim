@@ -86,7 +86,7 @@ P.S. You can delete this when you're done too. It's your config now! :)
 
 -- ============================================================
 -- SECTION 1: OPTIONS
--- Core Neovim settings, leaders, options, basic keymaps, basic autocmds
+-- Core Neovim settings, leaders, options
 -- ============================================================
 do
   -- Enable faster startup by caching compiled Lua modules
@@ -174,8 +174,8 @@ do
 end
 
 -- ============================================================
--- SECTION 2: KEYMAPS
--- basic keymaps
+-- SECTION 2: KEYMAPS & AUTOCMDS
+-- basic keymaps, basic autocmds
 -- ============================================================
 do
   -- [[ Basic Keymaps ]]
@@ -701,13 +701,13 @@ do
     -- clangd = {},
     -- gopls = {},
     -- pyright = {},
+    --
+    -- Some languages (like rust) have entire language plugins that can be useful:
+    --    https://github.com/mrcjkb/rustaceanvim
+    --
+    -- But for many setups, the LSP (`rust_analyzer`) will work just fine
     -- rust_analyzer = {},
-    --
-    -- Some languages (like typescript) have entire language plugins that can be useful:
-    --    https://github.com/pmizio/typescript-tools.nvim
-    --
-    -- But for many setups, the LSP (`ts_ls`) will work just fine
-    ts_ls = {
+    tsc = {
       init_options = {
         plugins = {
           {
@@ -735,7 +735,8 @@ do
           if path ~= vim.fn.stdpath 'config' and (vim.uv.fs_stat(path .. '/.luarc.json') or vim.uv.fs_stat(path .. '/.luarc.jsonc')) then return end
         end
 
-        client.config.settings.Lua = vim.tbl_deep_extend('force', client.config.settings.Lua, {
+        local current_settings = client.config.settings --[[@as lspconfig.settings.lua_ls]]
+        client.config.settings.Lua = vim.tbl_deep_extend('force', current_settings.Lua, {
           runtime = {
             version = 'LuaJIT',
             path = { 'lua/?.lua', 'lua/?/init.lua' },
@@ -744,10 +745,7 @@ do
             checkThirdParty = false,
             -- NOTE: this is a lot slower and will cause issues when working on your own configuration.
             --  See https://github.com/neovim/nvim-lspconfig/issues/3189
-            library = vim.tbl_extend('force', vim.api.nvim_get_runtime_file('', true), {
-              '${3rd}/luv/library',
-              '${3rd}/busted/library',
-            }),
+            library = vim.api.nvim_get_runtime_file('', true),
           },
         })
       end,
@@ -769,6 +767,11 @@ do
 
   -- Automatically install LSPs and related tools to stdpath for Neovim
   require('mason').setup {}
+
+  -- Translates between nvim-lspconfig server names and mason.nvim package names (e.g. lua_ls <-> lua-language-server)
+  require('mason-lspconfig').setup {
+    automatic_enable = false, -- Change this to true if you want to automatically enable servers that are installed manually (e.g. via :Mason / :MasonInstall)
+  }
 
   -- Ensure the servers and tools above are installed
   --
@@ -933,6 +936,10 @@ do
   local function treesitter_try_attach(buf, language)
     -- Check if a parser exists and load it
     if not vim.treesitter.language.add(language) then return end
+
+    -- Check if the buffer is valid (might not be after install completes)
+    if not vim.api.nvim_buf_is_valid(buf) then return end
+
     -- Enable syntax highlighting and other treesitter features
     vim.treesitter.start(buf, language)
 
@@ -978,25 +985,6 @@ end
 -- kickstart.plugins.* examples
 -- ============================================================
 do
-  -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
-  -- init.lua. If you want these files, they are in the repository, so you can just download them and
-  -- place them in the correct locations.
-
-  -- NOTE: Next step on your Neovim journey: Add/Configure additional plugins for Kickstart
-  --
-  --  Here are some example plugins that I've included in the Kickstart repository.
-  --  Uncomment any of the lines below to enable them (you will need to restart nvim).
-  --
-  -- require 'kickstart.plugins.debug'
-  -- require 'kickstart.plugins.indent_line'
-  -- require 'kickstart.plugins.lint'
-  -- require 'kickstart.plugins.autopairs'
-  -- require 'kickstart.plugins.neo-tree'
-  -- require 'kickstart.plugins.gitsigns' -- adds gitsigns recommended keymaps
-
-  -- NOTE: You can add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
-  --
-  --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   require 'plugins'
 end
 
