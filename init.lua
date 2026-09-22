@@ -707,7 +707,7 @@ do
     --
     -- But for many setups, the LSP (`rust_analyzer`) will work just fine
     -- rust_analyzer = {},
-    tsc = {
+    ts_ls = {
       init_options = {
         plugins = {
           {
